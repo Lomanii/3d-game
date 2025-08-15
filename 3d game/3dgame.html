@@ -1,0 +1,359 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title></title>
+  <meta name="Generator" content="Cocoa HTML Writer">
+  <meta name="CocoaVersion" content="2113.65">
+  <style type="text/css">
+    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 14.0px Helvetica}
+    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 14.0px Helvetica; min-height: 17.0px}
+  </style>
+</head>
+<body>
+<p class="p1">&lt;!DOCTYPE html&gt;</p>
+<p class="p1">&lt;html lang="en"&gt;</p>
+<p class="p1">&lt;head&gt;</p>
+<p class="p1">&lt;meta charset="utf-8" /&gt;</p>
+<p class="p1">&lt;meta name="viewport" content="width=device-width,initial-scale=1" /&gt;</p>
+<p class="p1">&lt;title&gt;Heaven Room • Spinning Head&lt;/title&gt;</p>
+<p class="p1">&lt;style&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>html,body{margin:0;height:100%;overflow:hidden;background:#000}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>#overlay{</p>
+<p class="p1"><span class="Apple-converted-space">    </span>position:fixed;inset:0;display:flex;align-items:center;justify-content:center;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>background:radial-gradient(circle at 50% 40%, rgba(255,255,255,.9), rgba(240,240,255,.7), rgba(0,0,0,.75));</p>
+<p class="p1"><span class="Apple-converted-space">    </span>color:#000;font:16px system-ui,Segoe UI,Roboto,Arial,sans-serif;text-align:center;gap:18px;flex-direction:column</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>#overlay button{padding:.7rem 1.1rem;border:0;border-radius:.4rem;background:#fff;cursor:pointer;font-weight:700}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>#hint{opacity:.75}</p>
+<p class="p1">&lt;/style&gt;</p>
+<p class="p1">&lt;/head&gt;</p>
+<p class="p1">&lt;body&gt;</p>
+<p class="p1">&lt;div id="overlay"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;h1 style="margin:.2rem 0"&gt;Enter&lt;/h1&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;p id="hint"&gt;Click to start. Headphones recommended.&lt;/p&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;button id="start"&gt;Begin&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;p style="font-size:.9rem"&gt;WASD to move. Mouse to look. Press H to toggle hints. Press G to glitch.&lt;/p&gt;</p>
+<p class="p1">&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1">&lt;canvas id="c"&gt;&lt;/canvas&gt;</p>
+<p class="p2"><br></p>
+<p class="p1">&lt;script type="module"&gt;</p>
+<p class="p1">import * as THREE from 'https://unpkg.com/three@0.161.0/build/three.module.js';</p>
+<p class="p1">import { PointerLockControls } from 'https://unpkg.com/three@0.161.0/examples/jsm/controls/PointerLockControls.js';</p>
+<p class="p1">import { EffectComposer } from 'https://unpkg.com/three@0.161.0/examples/jsm/postprocessing/EffectComposer.js';</p>
+<p class="p1">import { RenderPass } from 'https://unpkg.com/three@0.161.0/examples/jsm/postprocessing/RenderPass.js';</p>
+<p class="p1">import { UnrealBloomPass } from 'https://unpkg.com/three@0.161.0/examples/jsm/postprocessing/UnrealBloomPass.js';</p>
+<p class="p1">import { ShaderPass } from 'https://unpkg.com/three@0.161.0/examples/jsm/postprocessing/ShaderPass.js';</p>
+<p class="p1">import { GlitchPass } from 'https://unpkg.com/three@0.161.0/examples/jsm/postprocessing/GlitchPass.js';</p>
+<p class="p2"><br></p>
+<p class="p1">const canvas = document.getElementById('c');</p>
+<p class="p1">const renderer = new THREE.WebGLRenderer({canvas, antialias:true});</p>
+<p class="p1">renderer.setSize(innerWidth, innerHeight);</p>
+<p class="p1">renderer.setPixelRatio(Math.min(devicePixelRatio, 2));</p>
+<p class="p1">renderer.outputColorSpace = THREE.SRGBColorSpace;</p>
+<p class="p1">renderer.toneMapping = THREE.ACESFilmicToneMapping;</p>
+<p class="p1">renderer.toneMappingExposure = 1.2;</p>
+<p class="p2"><br></p>
+<p class="p1">const scene = new THREE.Scene();</p>
+<p class="p2"><br></p>
+<p class="p1">// gradient sky shader</p>
+<p class="p1">const skyMat = new THREE.ShaderMaterial({</p>
+<p class="p1"><span class="Apple-converted-space">  </span>uniforms:{</p>
+<p class="p1"><span class="Apple-converted-space">    </span>top:{value:new THREE.Color(0xf6f7ff)},</p>
+<p class="p1"><span class="Apple-converted-space">    </span>mid:{value:new THREE.Color(0xfdf9ff)},</p>
+<p class="p1"><span class="Apple-converted-space">    </span>bot:{value:new THREE.Color(0xcfe3ff)},</p>
+<p class="p1"><span class="Apple-converted-space">    </span>time:{value:0}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>},</p>
+<p class="p1"><span class="Apple-converted-space">  </span>vertexShader:`</p>
+<p class="p1"><span class="Apple-converted-space">    </span>varying vec3 vPos;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>void main(){</p>
+<p class="p1"><span class="Apple-converted-space">      </span>vPos = position;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}`,</p>
+<p class="p1"><span class="Apple-converted-space">  </span>fragmentShader:`</p>
+<p class="p1"><span class="Apple-converted-space">    </span>varying vec3 vPos;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>uniform vec3 top; uniform vec3 mid; uniform vec3 bot; uniform float time;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>float noise(vec2 p){</p>
+<p class="p1"><span class="Apple-converted-space">      </span>return fract(sin(dot(p, vec2(12.9898,78.233))) * 43758.5453);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>void main(){</p>
+<p class="p1"><span class="Apple-converted-space">      </span>float h = normalize(vPos).y * .5 + .5;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>vec3 grad = mix(bot, mix(mid, top, smoothstep(.3,.9,h)), smoothstep(.0,1.,h));</p>
+<p class="p1"><span class="Apple-converted-space">      </span>// soft clouds that shift</p>
+<p class="p1"><span class="Apple-converted-space">      </span>float n = noise(vPos.xz*0.02 + time*0.01) * 0.18;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>vec3 col = grad + vec3(n);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>gl_FragColor = vec4(col,1.);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}`</p>
+<p class="p1">});</p>
+<p class="p1">const sky = new THREE.Mesh(new THREE.SphereGeometry(200,64,32), skyMat);</p>
+<p class="p1">sky.material.side = THREE.BackSide;</p>
+<p class="p1">scene.add(sky);</p>
+<p class="p2"><br></p>
+<p class="p1">// subtle god‑light mesh</p>
+<p class="p1">const haloGeo = new THREE.SphereGeometry(6, 64, 64);</p>
+<p class="p1">const haloMat = new THREE.ShaderMaterial({</p>
+<p class="p1"><span class="Apple-converted-space">  </span>transparent:true, blending:THREE.AdditiveBlending, depthWrite:false,</p>
+<p class="p1"><span class="Apple-converted-space">  </span>uniforms:{time:{value:0}, color:{value:new THREE.Color(0xfff2cc)}},</p>
+<p class="p1"><span class="Apple-converted-space">  </span>vertexShader:`varying vec3 vN; void main(){ vN = normal; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.); }`,</p>
+<p class="p1"><span class="Apple-converted-space">  </span>fragmentShader:`</p>
+<p class="p1"><span class="Apple-converted-space">    </span>varying vec3 vN; uniform float time; uniform vec3 color;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>void main(){</p>
+<p class="p1"><span class="Apple-converted-space">      </span>float a = pow(smoothstep(.0,1.,1.-abs(vN.z)),2.0);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>float pulse = .4 + .3*sin(time*0.6) + .15*sin(time*2.3);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>gl_FragColor = vec4(color, (a*0.4)+pulse*0.05);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}`</p>
+<p class="p1">});</p>
+<p class="p1">const halo = new THREE.Mesh(haloGeo, haloMat);</p>
+<p class="p1">scene.add(halo);</p>
+<p class="p2"><br></p>
+<p class="p1">// camera and controls</p>
+<p class="p1">const camera = new THREE.PerspectiveCamera(70, innerWidth/innerHeight, 0.05, 400);</p>
+<p class="p1">camera.position.set(0, 1.6, 6);</p>
+<p class="p1">scene.add(camera);</p>
+<p class="p2"><br></p>
+<p class="p1">const controls = new PointerLockControls(camera, document.body);</p>
+<p class="p1">scene.add(controls.getObject());</p>
+<p class="p1">let move = {f:false,b:false,l:false,r:false};</p>
+<p class="p1">let velocity = new THREE.Vector3();</p>
+<p class="p1">let speed = 1.2;</p>
+<p class="p2"><br></p>
+<p class="p1">addEventListener('keydown', e=&gt;{</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(e.code==='KeyW') move.f = true;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(e.code==='KeyS') move.b = true;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(e.code==='KeyA') move.l = true;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(e.code==='KeyD') move.r = true;</p>
+<p class="p1">});</p>
+<p class="p1">addEventListener('keyup', e=&gt;{</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(e.code==='KeyW') move.f = false;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(e.code==='KeyS') move.b = false;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(e.code==='KeyA') move.l = false;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(e.code==='KeyD') move.r = false;</p>
+<p class="p1">});</p>
+<p class="p2"><br></p>
+<p class="p1">// head shader that fakes depth from luminance</p>
+<p class="p1">const faceTex = await new THREE.TextureLoader().loadAsync('pfp.jpg');</p>
+<p class="p1">faceTex.colorSpace = THREE.SRGBColorSpace;</p>
+<p class="p2"><br></p>
+<p class="p1">const head = new THREE.Mesh(</p>
+<p class="p1"><span class="Apple-converted-space">  </span>new THREE.PlaneGeometry(2.2, 2.8, 192, 192),</p>
+<p class="p1"><span class="Apple-converted-space">  </span>new THREE.ShaderMaterial({</p>
+<p class="p1"><span class="Apple-converted-space">    </span>transparent:true,</p>
+<p class="p1"><span class="Apple-converted-space">    </span>uniforms:{</p>
+<p class="p1"><span class="Apple-converted-space">      </span>map:{value:faceTex},</p>
+<p class="p1"><span class="Apple-converted-space">      </span>time:{value:0},</p>
+<p class="p1"><span class="Apple-converted-space">      </span>warpAmp:{value:0.18},</p>
+<p class="p1"><span class="Apple-converted-space">      </span>breathe:{value:0}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>},</p>
+<p class="p1"><span class="Apple-converted-space">    </span>vertexShader:`</p>
+<p class="p1"><span class="Apple-converted-space">      </span>uniform float time; uniform float warpAmp; uniform float breathe;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>varying vec2 vUv;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>// luminance from UV sample</p>
+<p class="p1"><span class="Apple-converted-space">      </span>uniform sampler2D map;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>void main(){</p>
+<p class="p1"><span class="Apple-converted-space">        </span>vUv = uv;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>vec3 pos = position;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>// sample luminance to bas‑relief the plane</p>
+<p class="p1"><span class="Apple-converted-space">        </span>vec3 tex = texture2D(map, uv).rgb;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>float lum = dot(tex, vec3(0.299,0.587,0.114));</p>
+<p class="p1"><span class="Apple-converted-space">        </span>float depth = (lum - 0.5) * 0.55;<span class="Apple-converted-space">          </span>// face relief</p>
+<p class="p1"><span class="Apple-converted-space">        </span>float pulse = sin(time*1.3 + uv.y*8.0)*0.02;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>pos.z += depth + pulse + breathe*0.06;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>// subtle edge curling for creep</p>
+<p class="p1"><span class="Apple-converted-space">        </span>pos.x += sin(uv.y*3.1415)*0.02;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>gl_Position = projectionMatrix * modelViewMatrix * vec4(pos,1.0);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}`,</p>
+<p class="p1"><span class="Apple-converted-space">    </span>fragmentShader:`</p>
+<p class="p1"><span class="Apple-converted-space">      </span>uniform sampler2D map; uniform float time;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>varying vec2 vUv;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>void main(){</p>
+<p class="p1"><span class="Apple-converted-space">        </span>vec4 c = texture2D(map, vUv);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>// soft vignetting</p>
+<p class="p1"><span class="Apple-converted-space">        </span>float d = distance(vUv, vec2(.5));</p>
+<p class="p1"><span class="Apple-converted-space">        </span>float vig = smoothstep(.8,.2, d);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>// cool tint with faint chroma split</p>
+<p class="p1"><span class="Apple-converted-space">        </span>vec2 off = vec2(0.0025*sin(time*0.7), 0.0025*cos(time*0.9));</p>
+<p class="p1"><span class="Apple-converted-space">        </span>float r = texture2D(map, vUv+off).r;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>float g = texture2D(map, vUv).g;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>float b = texture2D(map, vUv-off).b;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>vec3 rgb = vec3(r,g,b);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>// slight desaturation for uncanny skin</p>
+<p class="p1"><span class="Apple-converted-space">        </span>float gray = dot(rgb, vec3(.3,.59,.11));</p>
+<p class="p1"><span class="Apple-converted-space">        </span>rgb = mix(rgb, vec3(gray), 0.15);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>gl_FragColor = vec4(rgb * vig, 1.0);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}`</p>
+<p class="p1"><span class="Apple-converted-space">  </span>})</p>
+<p class="p1">);</p>
+<p class="p1">head.position.set(0, 1.6, 0);</p>
+<p class="p1">scene.add(head);</p>
+<p class="p2"><br></p>
+<p class="p1">// feather particles</p>
+<p class="p1">const feathers = new THREE.Group();</p>
+<p class="p1">scene.add(feathers);</p>
+<p class="p1">const flake = new THREE.TextureLoader().load('https://unpkg.com/three@0.161.0/examples/textures/sprites/snowflake1.png');</p>
+<p class="p1">for(let i=0;i&lt;650;i++){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const s = 0.15 + Math.random()*0.35;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const m = new THREE.PointsMaterial({size:s, map:flake, transparent:true, depthWrite:false});</p>
+<p class="p1"><span class="Apple-converted-space">  </span>m.opacity = 0.4 + Math.random()*0.4;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const g = new THREE.BufferGeometry();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const p = new Float32Array([ (Math.random()-0.5)*80, Math.random()*20 + 1.2, (Math.random()-0.5)*80 ]);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>g.setAttribute('position', new THREE.BufferAttribute(p,3));</p>
+<p class="p1"><span class="Apple-converted-space">  </span>feathers.add(new THREE.Points(g, m));</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">// ground haze</p>
+<p class="p1">const haze = new THREE.Mesh(new THREE.CylinderGeometry(80, 80, .2, 48, 1, true),</p>
+<p class="p1"><span class="Apple-converted-space">  </span>new THREE.MeshBasicMaterial({color:0xffffff, transparent:true, opacity:0.35}));</p>
+<p class="p1">haze.position.y = 0.05;</p>
+<p class="p1">scene.add(haze);</p>
+<p class="p2"><br></p>
+<p class="p1">// lights</p>
+<p class="p1">const dir = new THREE.DirectionalLight(0xfff1d6, 1.4);</p>
+<p class="p1">dir.position.set(5,10,2);</p>
+<p class="p1">scene.add(dir);</p>
+<p class="p1">scene.add(new THREE.AmbientLight(0xffffff, 0.45));</p>
+<p class="p2"><br></p>
+<p class="p1">// postprocessing</p>
+<p class="p1">const composer = new EffectComposer(renderer);</p>
+<p class="p1">composer.addPass(new RenderPass(scene, camera));</p>
+<p class="p2"><br></p>
+<p class="p1">const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 1.2, 0.9, 0.1);</p>
+<p class="p1">composer.addPass(bloom);</p>
+<p class="p2"><br></p>
+<p class="p1">// faint monochrome film bleed</p>
+<p class="p1">const filmShader = {</p>
+<p class="p1"><span class="Apple-converted-space">  </span>uniforms:{tDiffuse:{value:null}, time:{value:0.0}},</p>
+<p class="p1"><span class="Apple-converted-space">  </span>vertexShader:`varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);} `,</p>
+<p class="p1"><span class="Apple-converted-space">  </span>fragmentShader:`</p>
+<p class="p1"><span class="Apple-converted-space">    </span>uniform sampler2D tDiffuse; uniform float time; varying vec2 vUv;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7)))*43758.5453); }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>void main(){</p>
+<p class="p1"><span class="Apple-converted-space">      </span>vec4 c = texture2D(tDiffuse, vUv);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>float scan = 0.02*sin(vUv.y*800.0 + time*3.0);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>float grain = (hash(vUv + time) - 0.5) * 0.06;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>vec3 col = c.rgb + scan + grain;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>gl_FragColor = vec4(col, 1.0);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}`</p>
+<p class="p1">};</p>
+<p class="p1">const filmPass = new ShaderPass(filmShader);</p>
+<p class="p1">composer.addPass(filmPass);</p>
+<p class="p2"><br></p>
+<p class="p1">const glitch = new GlitchPass();</p>
+<p class="p1">glitch.enabled = false;</p>
+<p class="p1">composer.addPass(glitch);</p>
+<p class="p2"><br></p>
+<p class="p1">// audio</p>
+<p class="p1">const listener = new THREE.AudioListener();</p>
+<p class="p1">camera.add(listener);</p>
+<p class="p2"><br></p>
+<p class="p1">const music = new THREE.Audio(listener);</p>
+<p class="p1">const audioLoader = new THREE.AudioLoader();</p>
+<p class="p2"><br></p>
+<p class="p1">// UI and start</p>
+<p class="p1">const overlay = document.getElementById('overlay');</p>
+<p class="p1">document.getElementById('start').addEventListener('click', async ()=&gt;{</p>
+<p class="p1"><span class="Apple-converted-space">  </span>overlay.remove();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>controls.lock();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>try{</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const buffer = await audioLoader.loadAsync('choir.mp3');</p>
+<p class="p1"><span class="Apple-converted-space">    </span>music.setBuffer(buffer);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>music.setLoop(true);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>music.setVolume(0.7);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>// lowpass to make it otherworldly</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const ctx = listener.context;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const biquad = ctx.createBiquadFilter();</p>
+<p class="p1"><span class="Apple-converted-space">    </span>biquad.type = 'lowshelf';</p>
+<p class="p1"><span class="Apple-converted-space">    </span>biquad.frequency.value = 500;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>biquad.gain.value = 5.0;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>music.setFilter(biquad);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>music.play();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}catch(e){</p>
+<p class="p1"><span class="Apple-converted-space">    </span>console.warn('Audio load failed. Place choir.mp3 next to the HTML.');</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1">});</p>
+<p class="p2"><br></p>
+<p class="p1">// toggle hints and glitch</p>
+<p class="p1">let showHint = true;</p>
+<p class="p1">addEventListener('keydown', e=&gt;{</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(e.code==='KeyH'){ showHint = !showHint; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(e.code==='KeyG'){ glitch.enabled = !glitch.enabled; }</p>
+<p class="p1">});</p>
+<p class="p2"><br></p>
+<p class="p1">// resize</p>
+<p class="p1">addEventListener('resize', ()=&gt;{</p>
+<p class="p1"><span class="Apple-converted-space">  </span>camera.aspect = innerWidth/innerHeight;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>camera.updateProjectionMatrix();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>renderer.setSize(innerWidth, innerHeight);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>composer.setSize(innerWidth, innerHeight);</p>
+<p class="p1">});</p>
+<p class="p2"><br></p>
+<p class="p1">// animate</p>
+<p class="p1">let then = performance.now();</p>
+<p class="p1">function tick(now){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const dt = Math.min(0.033, (now-then)/1000); then = now;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>// movement</p>
+<p class="p1"><span class="Apple-converted-space">  </span>velocity.set(0,0,0);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(move.f) velocity.z -= 1;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(move.b) velocity.z += 1;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(move.l) velocity.x -= 1;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(move.r) velocity.x += 1;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>velocity.normalize().multiplyScalar(speed * dt * 4.0);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>controls.moveRight(velocity.x);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>controls.moveForward(velocity.z);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>// head behavior</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const t = now*0.001;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>haloMat.uniforms.time.value = t;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>skyMat.uniforms.time.value = t;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>head.material.uniforms.time.value = t;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>head.material.uniforms.breathe.value = Math.sin(t*0.7)*0.5 + 0.5;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>head.rotation.y = Math.sin(t*0.25)*0.25 + t*0.4;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>head.rotation.x = Math.sin(t*0.17)*0.06;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>head.position.y = 1.6 + Math.sin(t*0.9)*0.05;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>feathers.children.forEach(p=&gt;{</p>
+<p class="p1"><span class="Apple-converted-space">    </span>p.position.y -= 0.03 + Math.random()*0.01;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(p.position.y &lt; 0.2){ p.position.y = 20; p.position.x = (Math.random()-0.5)*80; p.position.z = (Math.random()-0.5)*80; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>});</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>filmPass.uniforms.time.value = t;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>composer.render();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>requestAnimationFrame(tick);</p>
+<p class="p1">}</p>
+<p class="p1">requestAnimationFrame(tick);</p>
+<p class="p2"><br></p>
+<p class="p1">// simple on‑screen hint</p>
+<p class="p1">const ctx2d = renderer.getContext('webgl2') ? null : null; // placeholder</p>
+<p class="p1">let hintEl;</p>
+<p class="p1">function ensureHint(){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(hintEl) return;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>hintEl = document.createElement('div');</p>
+<p class="p1"><span class="Apple-converted-space">  </span>hintEl.style.position='fixed';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>hintEl.style.left='12px';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>hintEl.style.bottom='12px';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>hintEl.style.padding='6px 8px';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>hintEl.style.background='rgba(255,255,255,.65)';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>hintEl.style.color='#000';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>hintEl.style.font='12px system-ui, Arial';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>hintEl.style.borderRadius='6px';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>hintEl.style.pointerEvents='none';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>hintEl.textContent='WASD move • G glitch • H hide';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>document.body.appendChild(hintEl);</p>
+<p class="p1">}</p>
+<p class="p1">ensureHint();</p>
+<p class="p1">addEventListener('keydown', e=&gt;{</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(e.code==='KeyH' &amp;&amp; hintEl){</p>
+<p class="p1"><span class="Apple-converted-space">    </span>hintEl.style.display = hintEl.style.display==='none' ? '' : 'none';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1">});</p>
+<p class="p1">&lt;/script&gt;</p>
+<p class="p1">&lt;/body&gt;</p>
+<p class="p1">&lt;/html&gt;</p>
+</body>
+</html>
